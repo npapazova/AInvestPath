@@ -1,4 +1,4 @@
-# AGENT.md: Product Vision, Architecture, and Standards
+# AGENTS.md: Product Vision, Architecture, and Standards
 
 ## 1. Product Vision
 **AInvestPath** is a modern, high-precision personal finance planning tool that empowers everyday savers to map out, evaluate, and achieve their long-term investment goals. By simplifying sophisticated financial projections into an interactive, visually stunning, and performance-driven single-page interface, it eliminates the confusion of complex spreadsheets. AInvestPath acts as a personal mathematical compass, illustrating with mathematical rigor how modifications in timelines, contribution amounts, or market scenarios translate to future compound wealth.

@@ -1,0 +1,36 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Goal {
+  id                  String   @id @default(uuid())
+  name                String
+  targetAmount        Float
+  currentAmount       Float
+  monthlyContribution Float
+  expectedReturn      Float
+  targetDate          DateTime
+  priority            String
+  status              String
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+  @@index([priority])
+  @@index([targetDate])
+}
+
+model ScenarioTemplate {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  annualReturn Float
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

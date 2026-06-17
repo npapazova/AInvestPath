@@ -1,0 +1,199 @@
+"use client";
+
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import type { Goal } from "@prisma/client";
+import { createGoal, updateGoal } from "@/app/actions/goals";
+import type { ActionResult } from "@/lib/actions/types";
+import { GOAL_PRIORITIES } from "@/lib/constants/goal";
+import { toDateInputValue } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+type GoalFormProps = {
+  goal?: Goal;
+  mode: "create" | "edit";
+  defaultTargetDate?: string;
+};
+
+type FormState = ActionResult<Goal>;
+
+const initialState: FormState = { success: false, error: "" };
+
+function FieldError({ messages }: { messages?: string[] }) {
+  if (!messages?.length) return null;
+  return <p className="text-sm text-destructive">{messages[0]}</p>;
+}
+
+const selectClassName = cn(
+  "flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm shadow-xs outline-none transition-colors",
+  "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+  "disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30",
+);
+
+export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
+  const router = useRouter();
+
+  const action =
+    mode === "create" ? createGoal : updateGoal.bind(null, goal!.id);
+
+  const [state, formAction, isPending] = useActionState(
+    async (_prev: FormState, formData: FormData) => action(formData),
+    initialState,
+  );
+
+  useEffect(() => {
+    if (state.success && "data" in state && state.data) {
+      toast.success(mode === "create" ? "Goal created" : "Goal updated");
+      router.push("/goals");
+      router.refresh();
+    } else if (!state.success && state.error && !state.fieldErrors) {
+      toast.error(state.error);
+    }
+  }, [state, mode, router]);
+
+  const fieldErrors = !state.success ? state.fieldErrors : undefined;
+  const defaultDate = goal
+    ? toDateInputValue(goal.targetDate)
+    : (defaultTargetDate ?? "");
+
+  return (
+    <form action={formAction} className="space-y-6">
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="name">Goal name</Label>
+          <Input
+            id="name"
+            name="name"
+            defaultValue={goal?.name ?? ""}
+            placeholder="e.g. Retirement Fund"
+            required
+          />
+          <FieldError messages={fieldErrors?.name} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="targetAmount">Target amount (€)</Label>
+          <Input
+            id="targetAmount"
+            name="targetAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            defaultValue={goal?.targetAmount ?? ""}
+            required
+          />
+          <FieldError messages={fieldErrors?.targetAmount} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="currentAmount">Current amount (€)</Label>
+          <Input
+            id="currentAmount"
+            name="currentAmount"
+            type="number"
+            min="0"
+            step="0.01"
+            defaultValue={goal?.currentAmount ?? ""}
+            required
+          />
+          <FieldError messages={fieldErrors?.currentAmount} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="monthlyContribution">Monthly contribution (€)</Label>
+          <Input
+            id="monthlyContribution"
+            name="monthlyContribution"
+            type="number"
+            min="0"
+            step="0.01"
+            defaultValue={goal?.monthlyContribution ?? ""}
+            required
+          />
+          <FieldError messages={fieldErrors?.monthlyContribution} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="expectedReturnPercent">Expected annual return (%)</Label>
+          <Input
+            id="expectedReturnPercent"
+            name="expectedReturnPercent"
+            type="number"
+            min="-99"
+            max="200"
+            step="0.1"
+            defaultValue={
+              goal ? (goal.expectedReturn * 100).toString() : "7"
+            }
+            required
+          />
+          <FieldError messages={fieldErrors?.expectedReturnPercent} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="targetDate">Target date</Label>
+          <Input
+            id="targetDate"
+            name="targetDate"
+            type="date"
+            defaultValue={defaultDate}
+            required
+          />
+          <FieldError messages={fieldErrors?.targetDate} />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <select
+            id="priority"
+            name="priority"
+            defaultValue={goal?.priority ?? "MEDIUM"}
+            className={selectClassName}
+          >
+            {GOAL_PRIORITIES.map((priority) => (
+              <option key={priority} value={priority}>
+                {priority}
+              </option>
+            ))}
+          </select>
+          <FieldError messages={fieldErrors?.priority} />
+        </div>
+
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="notes">Notes (optional)</Label>
+          <Textarea
+            id="notes"
+            name="notes"
+            rows={3}
+            defaultValue={goal?.notes ?? ""}
+            placeholder="Additional context for this goal..."
+          />
+          <FieldError messages={fieldErrors?.notes} />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={isPending}>
+          {isPending
+            ? "Saving..."
+            : mode === "create"
+              ? "Create Goal"
+              : "Save Changes"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/goals")}
+          disabled={isPending}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
