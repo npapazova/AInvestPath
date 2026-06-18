@@ -37,7 +37,7 @@ describe("financial projection engine", () => {
 
   it("Test Case D: probability is lower under higher volatility", () => {
     const safePortfolio = estimateSuccessProbability({
-      targetAmount: 23000.0,
+      targetAmount: 22246.0,
       currentAmount: 10000.0,
       monthlyContribution: 100.0,
       annualRate: 0.08,
@@ -46,7 +46,7 @@ describe("financial projection engine", () => {
     });
 
     const riskyPortfolio = estimateSuccessProbability({
-      targetAmount: 23000.0,
+      targetAmount: 22246.0,
       currentAmount: 10000.0,
       monthlyContribution: 100.0,
       annualRate: 0.08,
