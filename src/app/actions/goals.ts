@@ -5,6 +5,7 @@ import type { Goal } from "@prisma/client";
 import { ACTIVE_GOAL_STATUSES } from "@/lib/constants/goal";
 import { actionError, actionSuccess, type ActionResult } from "@/lib/actions/types";
 import { prisma } from "@/lib/db";
+import { fromCents, roundToCents, toCents } from "@/lib/money";
 import {
   formatZodErrors,
   parseGoalFormData,
@@ -17,11 +18,44 @@ export type GoalsFilter = {
 export async function getGoals(filter: GoalsFilter = {}): Promise<Goal[]> {
   const { includeArchived = false } = filter;
 
-  return prisma.goal.findMany({
+  const goals = await prisma.goal.findMany({
     where: includeArchived
       ? { status: "ARCHIVED" }
       : { status: { in: ACTIVE_GOAL_STATUSES } },
     orderBy: [{ priority: "desc" }, { targetDate: "asc" }],
+  });
+
+  if (goals.length === 0) {
+    return goals;
+  }
+
+  const contributionSums = await prisma.contribution.groupBy({
+    by: ["goalId"],
+    where: {
+      goalId: {
+        in: goals.map((goal) => goal.id),
+      },
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+
+  const contributionByGoalId = new Map(
+    contributionSums.map((entry) => [entry.goalId, entry._sum.amount ?? 0]),
+  );
+
+  return goals.map((goal) => {
+    const contributionTotal = roundToCents(
+      contributionByGoalId.get(goal.id) ?? 0,
+    );
+
+    return {
+      ...goal,
+      currentAmount: fromCents(
+        toCents(goal.currentAmount) + toCents(contributionTotal),
+      ),
+    };
   });
 }
 

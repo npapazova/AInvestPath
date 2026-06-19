@@ -26,6 +26,12 @@ export function AppHeader() {
             Goals
           </Link>
           <Link
+            href="/contributions"
+            className="text-sm font-medium text-white/80 transition hover:text-white"
+          >
+            Contribution History
+          </Link>
+          <Link
             href="/goals/new"
             className={cn(
               buttonVariants({ size: "sm", variant: "default" }),

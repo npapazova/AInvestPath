@@ -20,10 +20,25 @@ model Goal {
   notes               String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  contributions       Contribution[]
 
   @@index([status])
   @@index([priority])
   @@index([targetDate])
+}
+
+model Contribution {
+  id               String   @id @default(uuid())
+  goalId           String
+  amount           Float
+  contributionDate DateTime
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  goal             Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([contributionDate])
 }
 
 model ScenarioTemplate {
