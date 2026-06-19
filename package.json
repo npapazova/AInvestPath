@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate": "prisma migrate dev",
+    "db:backup": "node prisma/scripts/backup-dev-db.js",
+    "db:migrate": "npm run db:backup && prisma migrate dev",
+    "db:reset": "npm run db:backup && npx prisma migrate reset --force",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
