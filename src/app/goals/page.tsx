@@ -2,7 +2,6 @@ import { getGoals } from "@/app/actions/goals";
 import { GoalsFilterBar } from "@/components/goals/GoalsFilterBar";
 import { GoalList } from "@/components/goals/GoalList";
 import { GoalStatusFilter } from "@/components/goals/GoalStatusFilter";
-import { GoalsVisualizations } from "@/components/goals/GoalsVisualizations";
 import {
   enrichGoalsWithMetrics,
   filterGoals,
@@ -66,8 +65,6 @@ export default async function GoalsPage({ searchParams }: GoalsPageProps) {
         }}
         isArchivedView={isArchivedView}
       />
-
-      {!isArchivedView ? <GoalsVisualizations goals={sorted} /> : null}
 
       <GoalList goals={sorted} />
     </div>

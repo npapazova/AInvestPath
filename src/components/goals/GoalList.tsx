@@ -21,7 +21,7 @@ import {
 import {
   type GoalPriority,
 } from "@/lib/constants/goal";
-import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { GoalWithMetrics } from "@/lib/goals";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,12 @@ const priorityVariant: Record<
   HIGH: "default",
   MEDIUM: "secondary",
   LOW: "outline",
+};
+
+const priorityLabel: Record<GoalPriority, "H" | "M" | "L"> = {
+  HIGH: "H",
+  MEDIUM: "M",
+  LOW: "L",
 };
 
 export function GoalList({ goals }: GoalListProps) {
@@ -65,13 +71,11 @@ export function GoalList({ goals }: GoalListProps) {
           <TableRow>
             <TableHead>Goal</TableHead>
             <TableHead>Priority</TableHead>
-            <TableHead>Progress</TableHead>
+            <TableHead className="w-28">Progress</TableHead>
             <TableHead className="text-right">Current</TableHead>
             <TableHead className="text-right">Target</TableHead>
-            <TableHead className="text-right">Monthly</TableHead>
-            <TableHead className="text-right">Return</TableHead>
             <TableHead>Target Date</TableHead>
-            <TableHead>Projected Completion</TableHead>
+            <TableHead>Proj. Completion</TableHead>
             <TableHead className="text-right">Projected Delta</TableHead>
             <TableHead>Simulations</TableHead>
             <TableHead>Contributions</TableHead>
@@ -91,12 +95,12 @@ export function GoalList({ goals }: GoalListProps) {
               </TableCell>
               <TableCell>
                 <Badge variant={priorityVariant[goal.priority as GoalPriority]}>
-                  {goal.priority}
+                  {priorityLabel[goal.priority as GoalPriority]}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell className="w-28">
                 <div className="space-y-1">
-                  <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200">
+                  <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
                     <div
                       className="h-full rounded-full bg-emerald-500"
                       style={{ width: `${Math.min(100, goal.progressPercentage)}%` }}
@@ -112,12 +116,6 @@ export function GoalList({ goals }: GoalListProps) {
               </TableCell>
               <TableCell className="text-right">
                 {formatCurrency(goal.targetAmount)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatCurrency(goal.monthlyContribution)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatPercent(goal.expectedReturn)}
               </TableCell>
               <TableCell>{formatDate(goal.targetDate)}</TableCell>
               <TableCell>

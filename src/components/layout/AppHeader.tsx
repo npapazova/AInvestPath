@@ -41,7 +41,16 @@ export function AppHeader() {
             Goals
           </Link>
           <Link
-            href="/goals"
+            href="/insights"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "border-violet-200/40 bg-violet-100/10 text-violet-50 hover:bg-violet-100/20 hover:text-violet-50",
+            )}
+          >
+            Insights
+          </Link>
+          <Link
+            href="/simulations"
             className={cn(
               buttonVariants({ size: "sm", variant: "outline" }),
               "border-violet-200/40 bg-violet-100/10 text-violet-50 hover:bg-violet-100/20 hover:text-violet-50",

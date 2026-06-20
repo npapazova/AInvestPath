@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Goal } from "@prisma/client";
@@ -41,6 +41,25 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
   const action =
     mode === "create" ? createGoal : updateGoal.bind(null, goal!.id);
 
+  const [name, setName] = useState(goal?.name ?? "");
+  const [targetAmount, setTargetAmount] = useState(
+    goal?.targetAmount.toString() ?? "",
+  );
+  const [currentAmount, setCurrentAmount] = useState(
+    goal?.currentAmount.toString() ?? "",
+  );
+  const [monthlyContribution, setMonthlyContribution] = useState(
+    goal?.monthlyContribution.toString() ?? "",
+  );
+  const [expectedReturnPercent, setExpectedReturnPercent] = useState(
+    goal ? (goal.expectedReturn * 100).toString() : "7",
+  );
+  const [targetDate, setTargetDate] = useState(
+    goal ? toDateInputValue(goal.targetDate) : (defaultTargetDate ?? ""),
+  );
+  const [priority, setPriority] = useState(goal?.priority ?? "MEDIUM");
+  const [notes, setNotes] = useState(goal?.notes ?? "");
+
   const [state, formAction, isPending] = useActionState(
     async (_prev: FormState, formData: FormData) => action(formData),
     initialState,
@@ -69,7 +88,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
           <Input
             id="name"
             name="name"
-            defaultValue={goal?.name ?? ""}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
             placeholder="e.g. Retirement Fund"
             required
           />
@@ -84,7 +104,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             type="number"
             min="0.01"
             step="0.01"
-            defaultValue={goal?.targetAmount ?? ""}
+            value={targetAmount}
+            onChange={(event) => setTargetAmount(event.target.value)}
             required
           />
           <FieldError messages={fieldErrors?.targetAmount} />
@@ -98,7 +119,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             type="number"
             min="0"
             step="0.01"
-            defaultValue={goal?.currentAmount ?? ""}
+            value={currentAmount}
+            onChange={(event) => setCurrentAmount(event.target.value)}
             required
           />
           <FieldError messages={fieldErrors?.currentAmount} />
@@ -112,7 +134,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             type="number"
             min="0"
             step="0.01"
-            defaultValue={goal?.monthlyContribution ?? ""}
+            value={monthlyContribution}
+            onChange={(event) => setMonthlyContribution(event.target.value)}
             required
           />
           <FieldError messages={fieldErrors?.monthlyContribution} />
@@ -127,9 +150,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             min="-99"
             max="200"
             step="0.1"
-            defaultValue={
-              goal ? (goal.expectedReturn * 100).toString() : "7"
-            }
+            value={expectedReturnPercent}
+            onChange={(event) => setExpectedReturnPercent(event.target.value)}
             required
           />
           <FieldError messages={fieldErrors?.expectedReturnPercent} />
@@ -141,7 +163,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             id="targetDate"
             name="targetDate"
             type="date"
-            defaultValue={defaultDate}
+            value={targetDate}
+            onChange={(event) => setTargetDate(event.target.value)}
             required
           />
           <FieldError messages={fieldErrors?.targetDate} />
@@ -152,7 +175,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
           <select
             id="priority"
             name="priority"
-            defaultValue={goal?.priority ?? "MEDIUM"}
+            value={priority}
+            onChange={(event) => setPriority(event.target.value as Goal["priority"])}
             className={selectClassName}
           >
             {GOAL_PRIORITIES.map((priority) => (
@@ -170,7 +194,8 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             id="notes"
             name="notes"
             rows={3}
-            defaultValue={goal?.notes ?? ""}
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
             placeholder="Additional context for this goal..."
           />
           <FieldError messages={fieldErrors?.notes} />
