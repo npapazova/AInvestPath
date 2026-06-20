@@ -22,21 +22,39 @@ export function AppHeader() {
           </div>
         </Link>
         <nav className="flex flex-wrap items-center gap-3">
-          <Link href="/" className="text-sm font-medium text-white/80 transition hover:text-white">
+          <Link
+            href="/"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "border-violet-200/40 bg-violet-100/10 text-violet-50 hover:bg-violet-100/20 hover:text-violet-50",
+            )}
+          >
             Dashboard
           </Link>
-          <Link href="/goals" className="text-sm font-medium text-white/80 transition hover:text-white">
+          <Link
+            href="/goals"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "border-violet-200/40 bg-violet-100/10 text-violet-50 hover:bg-violet-100/20 hover:text-violet-50",
+            )}
+          >
             Goals
           </Link>
           <Link
             href="/goals"
-            className="text-sm font-medium text-white/80 transition hover:text-white"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "border-violet-200/40 bg-violet-100/10 text-violet-50 hover:bg-violet-100/20 hover:text-violet-50",
+            )}
           >
             Simulations
           </Link>
           <Link
             href="/contributions"
-            className="text-sm font-medium text-white/80 transition hover:text-white"
+            className={cn(
+              buttonVariants({ size: "sm", variant: "outline" }),
+              "border-violet-200/40 bg-violet-100/10 text-violet-50 hover:bg-violet-100/20 hover:text-violet-50",
+            )}
           >
             Contribution History
           </Link>
