@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Contribution } from "@prisma/client";
@@ -84,9 +84,16 @@ export function ContributionForm({
   const cancelHref = contribution
     ? `/goals/${contribution.goalId}/contributions`
     : "/goals";
-  const defaultContributionDate = contribution
-    ? toDateInputValue(new Date(contribution.contributionDate))
-    : toDateInputValue(new Date());
+  const [goalIdValue, setGoalIdValue] = useState(() => selectedGoalId);
+  const [amountValue, setAmountValue] = useState(() =>
+    contribution?.amount != null ? String(contribution.amount) : "",
+  );
+  const [contributionDateValue, setContributionDateValue] = useState(() =>
+    contribution
+      ? toDateInputValue(new Date(contribution.contributionDate))
+      : toDateInputValue(new Date()),
+  );
+  const [noteValue, setNoteValue] = useState(() => contribution?.note ?? "");
 
   return (
     <form action={formAction} className="space-y-6">
@@ -96,7 +103,8 @@ export function ContributionForm({
           <select
             id="goalId"
             name="goalId"
-            defaultValue={selectedGoalId}
+            value={goalIdValue}
+            onChange={(event) => setGoalIdValue(event.target.value)}
             className={selectClassName}
             required
           >
@@ -124,7 +132,8 @@ export function ContributionForm({
             type="number"
             min="0.01"
             step="0.01"
-            defaultValue={contribution?.amount ?? ""}
+            value={amountValue}
+            onChange={(event) => setAmountValue(event.target.value)}
             onWheel={(event) => event.currentTarget.blur()}
             required
           />
@@ -137,7 +146,8 @@ export function ContributionForm({
             id="contributionDate"
             name="contributionDate"
             type="date"
-            defaultValue={defaultContributionDate}
+            value={contributionDateValue}
+            onChange={(event) => setContributionDateValue(event.target.value)}
             required
           />
           <FieldError messages={fieldErrors?.contributionDate} />
@@ -149,7 +159,8 @@ export function ContributionForm({
             id="note"
             name="note"
             rows={3}
-            defaultValue={contribution?.note ?? ""}
+            value={noteValue}
+            onChange={(event) => setNoteValue(event.target.value)}
             placeholder="e.g. Bonus contribution"
           />
           <FieldError messages={fieldErrors?.note} />
