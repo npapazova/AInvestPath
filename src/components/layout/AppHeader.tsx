@@ -8,7 +8,7 @@ export function AppHeader() {
     <header className="border-b border-slate-200 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600">
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
         <Link
-          href="/goals"
+          href="/"
           className="flex items-center gap-3 rounded-3xl bg-slate-50 px-3 py-2 text-slate-900 transition hover:bg-slate-100"
         >
           <span className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-200 text-slate-900">
@@ -22,6 +22,9 @@ export function AppHeader() {
           </div>
         </Link>
         <nav className="flex flex-wrap items-center gap-3">
+          <Link href="/" className="text-sm font-medium text-white/80 transition hover:text-white">
+            Dashboard
+          </Link>
           <Link href="/goals" className="text-sm font-medium text-white/80 transition hover:text-white">
             Goals
           </Link>
