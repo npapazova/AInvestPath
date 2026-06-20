@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import type { Goal } from "@prisma/client";
 import { GoalActions } from "@/components/goals/GoalActions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -19,13 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { GoalPriority } from "@/lib/constants/goal";
+import {
+  type GoalPriority,
+} from "@/lib/constants/goal";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import type { GoalWithMetrics } from "@/lib/goals";
 import { cn } from "@/lib/utils";
 
 type GoalListProps = {
-  goals: Goal[];
-  isArchivedView: boolean;
+  goals: GoalWithMetrics[];
 };
 
 const priorityVariant: Record<
@@ -37,28 +38,22 @@ const priorityVariant: Record<
   LOW: "outline",
 };
 
-export function GoalList({ goals, isArchivedView }: GoalListProps) {
+export function GoalList({ goals }: GoalListProps) {
   if (goals.length === 0) {
     return (
       <Card>
         <CardHeader className="text-center">
-          <CardTitle>
-            {isArchivedView ? "No archived goals" : "No goals yet"}
-          </CardTitle>
+          <CardTitle>No goals match your filters</CardTitle>
           <CardDescription>
-            {isArchivedView
-              ? "Goals you archive will appear here."
-              : "Create your first investment goal to start planning your financial future."}
+            Try changing category, date range, or sorting options.
           </CardDescription>
         </CardHeader>
-        {!isArchivedView && (
-          <CardContent className="flex justify-center pb-8">
-            <Link href="/goals/new" className={cn(buttonVariants())}>
-              <Plus className="size-4" />
-              Create Goal
-            </Link>
-          </CardContent>
-        )}
+        <CardContent className="flex justify-center pb-8">
+          <Link href="/goals/new" className={cn(buttonVariants())}>
+            <Plus className="size-4" />
+            Create Goal
+          </Link>
+        </CardContent>
       </Card>
     );
   }
@@ -70,11 +65,14 @@ export function GoalList({ goals, isArchivedView }: GoalListProps) {
           <TableRow>
             <TableHead>Goal</TableHead>
             <TableHead>Priority</TableHead>
+            <TableHead>Progress</TableHead>
             <TableHead className="text-right">Current</TableHead>
             <TableHead className="text-right">Target</TableHead>
             <TableHead className="text-right">Monthly</TableHead>
             <TableHead className="text-right">Return</TableHead>
             <TableHead>Target Date</TableHead>
+            <TableHead>Projected Completion</TableHead>
+            <TableHead className="text-right">Projected Delta</TableHead>
             <TableHead>Simulations</TableHead>
             <TableHead>Contributions</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -96,6 +94,19 @@ export function GoalList({ goals, isArchivedView }: GoalListProps) {
                   {goal.priority}
                 </Badge>
               </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className="h-full rounded-full bg-emerald-500"
+                      style={{ width: `${Math.min(100, goal.progressPercentage)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {goal.progressPercentage.toFixed(1)}%
+                  </span>
+                </div>
+              </TableCell>
               <TableCell className="text-right">
                 {formatCurrency(goal.currentAmount)}
               </TableCell>
@@ -109,6 +120,21 @@ export function GoalList({ goals, isArchivedView }: GoalListProps) {
                 {formatPercent(goal.expectedReturn)}
               </TableCell>
               <TableCell>{formatDate(goal.targetDate)}</TableCell>
+              <TableCell>
+                {goal.projectedCompletionDate ? formatDate(goal.projectedCompletionDate) : "Not reachable"}
+              </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={cn(
+                    "font-medium",
+                    goal.projectedValueAtTargetDate >= goal.targetAmount
+                      ? "text-emerald-700"
+                      : "text-amber-700",
+                  )}
+                >
+                  {formatCurrency(goal.projectedValueAtTargetDate - goal.targetAmount)}
+                </span>
+              </TableCell>
               <TableCell>
                 <Link
                   href={`/goals/${goal.id}/simulations`}
@@ -126,7 +152,7 @@ export function GoalList({ goals, isArchivedView }: GoalListProps) {
                 </Link>
               </TableCell>
               <TableCell>
-                <GoalActions goal={goal} isArchived={isArchivedView} />
+                <GoalActions goal={goal} isArchived={goal.status === "ARCHIVED"} />
               </TableCell>
             </TableRow>
           ))}

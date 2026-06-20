@@ -1,18 +1,41 @@
-import Link from "next/link";
 import { getGoals } from "@/app/actions/goals";
+import { GoalsFilterBar } from "@/components/goals/GoalsFilterBar";
 import { GoalList } from "@/components/goals/GoalList";
 import { GoalStatusFilter } from "@/components/goals/GoalStatusFilter";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { GoalsVisualizations } from "@/components/goals/GoalsVisualizations";
+import {
+  enrichGoalsWithMetrics,
+  filterGoals,
+  sortGoals,
+  type GoalQueryFilters,
+} from "@/lib/goals";
 
 type GoalsPageProps = {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    status?: string;
+    targetFrom?: string;
+    targetTo?: string;
+    sort?: string;
+    order?: string;
+  }>;
 };
 
 export default async function GoalsPage({ searchParams }: GoalsPageProps) {
-  const { view } = await searchParams;
-  const isArchivedView = view === "archived";
+  const params = await searchParams;
+  const isArchivedView = params.view === "archived" || params.status === "archived";
+
+  const filters: GoalQueryFilters = {
+    targetFrom: params.targetFrom,
+    targetTo: params.targetTo,
+    sort: normalizeSort(params.sort),
+    order: normalizeOrder(params.order),
+  };
+
   const goals = await getGoals({ includeArchived: isArchivedView });
+  const enrichedGoals = enrichGoalsWithMetrics(goals);
+  const filtered = filterGoals(enrichedGoals, filters);
+  const sorted = sortGoals(filtered, filters.sort, filters.order);
 
   return (
     <div className="space-y-6">
@@ -30,9 +53,44 @@ export default async function GoalsPage({ searchParams }: GoalsPageProps) {
         </div>
       </section>
 
-      <GoalStatusFilter activeView={isArchivedView ? "archived" : "active"} />
+      <GoalStatusFilter
+        activeView={isArchivedView ? "archived" : "goals"}
+      />
 
-      <GoalList goals={goals} isArchivedView={isArchivedView} />
+      <GoalsFilterBar
+        filters={{
+          targetFrom: filters.targetFrom,
+          targetTo: filters.targetTo,
+          sort: filters.sort ?? "targetDate",
+          order: filters.order ?? "asc",
+        }}
+        isArchivedView={isArchivedView}
+      />
+
+      {!isArchivedView ? <GoalsVisualizations goals={sorted} /> : null}
+
+      <GoalList goals={sorted} />
     </div>
   );
+}
+
+function normalizeSort(value?: string): GoalQueryFilters["sort"] {
+  if (
+    value === "progress"
+    || value === "targetAmount"
+    || value === "targetDate"
+    || value === "projectedCompletionDate"
+  ) {
+    return value;
+  }
+
+  return "targetDate";
+}
+
+function normalizeOrder(value?: string): GoalQueryFilters["order"] {
+  if (value === "desc") {
+    return "desc";
+  }
+
+  return "asc";
 }

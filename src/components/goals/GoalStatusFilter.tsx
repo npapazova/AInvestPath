@@ -2,12 +2,12 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type GoalStatusFilterProps = {
-  activeView: "active" | "archived";
+  activeView: "goals" | "archived";
 };
 
 export function GoalStatusFilter({ activeView }: GoalStatusFilterProps) {
   const tabs = [
-    { value: "active" as const, label: "Active", href: "/goals" },
+    { value: "goals" as const, label: "Goals", href: "/goals" },
     { value: "archived" as const, label: "Archived", href: "/goals?view=archived" },
   ];
 

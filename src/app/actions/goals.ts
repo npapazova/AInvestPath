@@ -13,15 +13,25 @@ import {
 
 export type GoalsFilter = {
   includeArchived?: boolean;
+  status?: "completed" | "archived" | "all";
 };
 
 export async function getGoals(filter: GoalsFilter = {}): Promise<Goal[]> {
-  const { includeArchived = false } = filter;
+  const { includeArchived = false, status } = filter;
+
+  const where =
+    status === "all"
+      ? undefined
+      : status === "archived"
+        ? { status: "ARCHIVED" }
+        : status === "completed"
+          ? { status: "COMPLETED" }
+          : includeArchived
+            ? { status: "ARCHIVED" }
+            : { status: { in: ACTIVE_GOAL_STATUSES } };
 
   const goals = await prisma.goal.findMany({
-    where: includeArchived
-      ? { status: "ARCHIVED" }
-      : { status: { in: ACTIVE_GOAL_STATUSES } },
+    where,
     orderBy: [{ priority: "desc" }, { targetDate: "asc" }],
   });
 
