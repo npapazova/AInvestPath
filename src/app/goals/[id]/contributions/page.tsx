@@ -7,6 +7,7 @@ import {
 import { getGoal } from "@/app/actions/goals";
 import { ContributionForm } from "@/components/contributions/ContributionForm";
 import { ContributionHistoryTable } from "@/components/contributions/ContributionHistoryTable";
+import { ScenarioSimulation } from "@/components/contributions/ScenarioSimulation";
 import { ContributionSummary } from "@/components/contributions/ContributionSummary";
 import {
   Card,
@@ -33,6 +34,9 @@ export default async function GoalContributionsPage({
   if (!goal || !summary) {
     notFound();
   }
+
+  const currentAmountWithContributions = goal.currentAmount + summary.totalContributed;
+  const monthsRemaining = calculateMonthsRemaining(new Date(), goal.targetDate);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -74,7 +78,30 @@ export default async function GoalContributionsPage({
         progressPercentage={summary.progressPercentage}
       />
 
+      <ScenarioSimulation
+        currentAmount={currentAmountWithContributions}
+        monthlyContribution={goal.monthlyContribution}
+        targetAmount={goal.targetAmount}
+        monthsRemaining={monthsRemaining}
+      />
+
       <ContributionHistoryTable contributions={contributions} />
     </div>
   );
+}
+
+function calculateMonthsRemaining(currentDate: Date, targetDate: Date): number {
+  if (targetDate <= currentDate) {
+    return 0;
+  }
+
+  const yearDelta = targetDate.getFullYear() - currentDate.getFullYear();
+  const monthDelta = targetDate.getMonth() - currentDate.getMonth();
+  let months = yearDelta * 12 + monthDelta;
+
+  if (targetDate.getDate() < currentDate.getDate()) {
+    months -= 1;
+  }
+
+  return Math.max(0, months);
 }

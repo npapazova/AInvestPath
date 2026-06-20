@@ -26,6 +26,12 @@ export function AppHeader() {
             Goals
           </Link>
           <Link
+            href="/goals"
+            className="text-sm font-medium text-white/80 transition hover:text-white"
+          >
+            Simulations
+          </Link>
+          <Link
             href="/contributions"
             className="text-sm font-medium text-white/80 transition hover:text-white"
           >

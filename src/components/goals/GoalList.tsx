@@ -75,6 +75,7 @@ export function GoalList({ goals, isArchivedView }: GoalListProps) {
             <TableHead className="text-right">Monthly</TableHead>
             <TableHead className="text-right">Return</TableHead>
             <TableHead>Target Date</TableHead>
+            <TableHead>Simulations</TableHead>
             <TableHead>Contributions</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -108,6 +109,14 @@ export function GoalList({ goals, isArchivedView }: GoalListProps) {
                 {formatPercent(goal.expectedReturn)}
               </TableCell>
               <TableCell>{formatDate(goal.targetDate)}</TableCell>
+              <TableCell>
+                <Link
+                  href={`/goals/${goal.id}/simulations`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  Simulate
+                </Link>
+              </TableCell>
               <TableCell>
                 <Link
                   href={`/goals/${goal.id}/contributions`}

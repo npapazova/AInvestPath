@@ -65,6 +65,13 @@ describe("financial projection engine", () => {
       "Moderate",
       "Aggressive",
     ]);
+    expect(scenarios.map((scenario) => scenario.annualRate)).toEqual([
+      0.04,
+      0.08,
+      0.12,
+    ]);
+    expect(scenarios[2].futureValue).toBeGreaterThan(scenarios[1].futureValue);
+    expect(scenarios[1].futureValue).toBeGreaterThan(scenarios[0].futureValue);
   });
 
   it("evaluates goal status correctly", () => {

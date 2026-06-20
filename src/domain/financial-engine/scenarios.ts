@@ -1,17 +1,24 @@
 import { calculateFutureValue } from "@/domain/financial-engine/math";
 
+export type ScenarioName = "Conservative" | "Moderate" | "Aggressive";
+
+export interface ScenarioDefinition {
+  scenarioName: ScenarioName;
+  annualRate: number;
+}
+
 export interface ScenarioOutput {
-  scenarioName: string;
+  scenarioName: ScenarioName;
   annualRate: number;
   futureValue: number;
   totalInvested: number;
   totalGains: number;
 }
 
-const SCENARIOS = [
+export const SCENARIOS: readonly ScenarioDefinition[] = [
   { scenarioName: "Conservative", annualRate: 0.04 },
-  { scenarioName: "Moderate", annualRate: 0.07 },
-  { scenarioName: "Aggressive", annualRate: 0.10 },
+  { scenarioName: "Moderate", annualRate: 0.08 },
+  { scenarioName: "Aggressive", annualRate: 0.12 },
 ] as const;
 
 export function compareScenarios(
