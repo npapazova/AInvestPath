@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { compareScenarios } from "@/domain/financial-engine/scenarios";
+import { calculateFutureValue } from "@/domain/financial-engine/math";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatPercent } from "@/lib/format";
@@ -11,39 +12,71 @@ type GoalSimulationPanelProps = {
   monthlyContribution: number;
   targetAmount: number;
   initialMonths: number;
+  initialCustomAnnualRate: number;
 };
 
 const MIN_MONTHS = 1;
 const MAX_MONTHS = 600;
+const MIN_CUSTOM_ANNUAL_RATE_PERCENT = 0;
+const MAX_CUSTOM_ANNUAL_RATE_PERCENT = 100;
 
 export function GoalSimulationPanel({
   currentAmount,
   monthlyContribution,
   targetAmount,
   initialMonths,
+  initialCustomAnnualRate,
 }: GoalSimulationPanelProps) {
   const normalizedInitial = clampMonths(initialMonths);
+  const normalizedInitialCustomRate = normalizeCustomAnnualRatePercent(initialCustomAnnualRate);
   const [months, setMonths] = useState<number>(normalizedInitial);
+  const [monthsInput, setMonthsInput] = useState<string>(String(normalizedInitial));
+  const [customAnnualRatePercent, setCustomAnnualRatePercent] = useState<number>(
+    normalizedInitialCustomRate,
+  );
+  const [customAnnualRateInput, setCustomAnnualRateInput] = useState<string>(
+    formatRatePercentInput(normalizedInitialCustomRate),
+  );
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const customAnnualRate = customAnnualRatePercent / 100;
+
   const scenarios = useMemo(
-    () => compareScenarios(currentAmount, monthlyContribution, months),
-    [currentAmount, monthlyContribution, months],
+    () => {
+      const baseScenarios = compareScenarios(currentAmount, monthlyContribution, months);
+      const customProjection = calculateFutureValue({
+        initialPrincipal: currentAmount,
+        monthlyContribution,
+        annualRate: customAnnualRate,
+        months,
+      });
+
+      return [
+        ...baseScenarios,
+        {
+          scenarioName: "Custom" as const,
+          annualRate: customAnnualRate,
+          futureValue: customProjection.futureValue,
+          totalInvested: customProjection.totalInvested,
+          totalGains: customProjection.totalGains,
+        },
+      ];
+    },
+    [currentAmount, monthlyContribution, months, customAnnualRate],
   );
 
   const chart = useMemo(
-    () => buildScenarioChartData(currentAmount, monthlyContribution, months),
-    [currentAmount, monthlyContribution, months],
+    () => buildScenarioChartData(currentAmount, monthlyContribution, months, customAnnualRate),
+    [currentAmount, monthlyContribution, months, customAnnualRate],
   );
 
   const hoveredMonth = hoveredIndex == null ? null : chart.sampledMonths[hoveredIndex];
   const hoveredValues = hoveredIndex == null
     ? null
-    : {
-        Conservative: chart.valuesByScenario.Conservative[hoveredIndex],
-        Moderate: chart.valuesByScenario.Moderate[hoveredIndex],
-        Aggressive: chart.valuesByScenario.Aggressive[hoveredIndex],
-      };
+    : CHART_SERIES_META.reduce<Record<SeriesKey, number>>((acc, seriesMeta) => {
+        acc[seriesMeta.key] = chart.valuesByScenario[seriesMeta.key][hoveredIndex];
+        return acc;
+      }, {} as Record<SeriesKey, number>);
   const hoveredX = hoveredIndex == null
     ? null
     : chart.series.Conservative[hoveredIndex].x;
@@ -53,29 +86,58 @@ export function GoalSimulationPanel({
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Timeline controls</h2>
         <p className="text-sm text-muted-foreground">
-          Adjust the horizon to instantly compare conservative, moderate, and aggressive outcomes.
+          Adjust horizon and custom return assumptions to compare projected outcomes.
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-xl border bg-muted/20 p-4">
-        <div className="flex items-center justify-between gap-4">
+      <div className="grid gap-4 rounded-xl border bg-muted/20 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <label htmlFor="timeline-months" className="text-sm font-medium">
             Projection timeline (months)
           </label>
           <Input
             id="timeline-months"
-            type="number"
-            min={MIN_MONTHS}
-            max={MAX_MONTHS}
-            value={months}
+            type="text"
+            inputMode="numeric"
+            value={monthsInput}
             onChange={(event) => {
-              const parsed = Number(event.target.value);
+              const nextValue = event.target.value;
+
+              if (!/^\d*$/.test(nextValue)) {
+                return;
+              }
+
+              setMonthsInput(nextValue);
+
+              if (nextValue === "") {
+                return;
+              }
+
+              const parsed = Number(nextValue);
 
               if (Number.isNaN(parsed)) {
                 return;
               }
 
               setMonths(clampMonths(parsed));
+            }}
+            onBlur={() => {
+              if (monthsInput.trim() === "") {
+                setMonths(MIN_MONTHS);
+                setMonthsInput(String(MIN_MONTHS));
+                return;
+              }
+
+              const parsed = Number(monthsInput);
+
+              if (Number.isNaN(parsed)) {
+                setMonthsInput(String(months));
+                return;
+              }
+
+              const normalized = clampMonths(parsed);
+              setMonths(normalized);
+              setMonthsInput(String(normalized));
             }}
             className="w-28"
           />
@@ -85,12 +147,71 @@ export function GoalSimulationPanel({
           min={MIN_MONTHS}
           max={MAX_MONTHS}
           value={months}
-          onChange={(event) => setMonths(clampMonths(Number(event.target.value)))}
+          onChange={(event) => {
+            const normalized = clampMonths(Number(event.target.value));
+            setMonths(normalized);
+            setMonthsInput(String(normalized));
+          }}
           className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200"
           aria-label="Projection timeline in months"
         />
         <p className="text-xs text-muted-foreground">
           {months} months equals {(months / 12).toFixed(1)} years.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4">
+          <label htmlFor="custom-annual-return" className="text-sm font-medium">
+            Custom expected annual return (%)
+          </label>
+          <Input
+            id="custom-annual-return"
+            type="text"
+            inputMode="decimal"
+            value={customAnnualRateInput}
+            onChange={(event) => {
+              const nextValue = event.target.value.replace(",", ".");
+
+              if (!/^\d*(\.\d{0,2})?$/.test(nextValue)) {
+                return;
+              }
+
+              setCustomAnnualRateInput(nextValue);
+
+              if (nextValue === "") {
+                return;
+              }
+
+              const parsed = Number(nextValue);
+
+              if (Number.isNaN(parsed)) {
+                return;
+              }
+
+              setCustomAnnualRatePercent(normalizeCustomAnnualRatePercent(parsed));
+            }}
+            onBlur={() => {
+              if (customAnnualRateInput.trim() === "") {
+                setCustomAnnualRatePercent(MIN_CUSTOM_ANNUAL_RATE_PERCENT);
+                setCustomAnnualRateInput(formatRatePercentInput(MIN_CUSTOM_ANNUAL_RATE_PERCENT));
+                return;
+              }
+
+              const parsed = Number(customAnnualRateInput);
+
+              if (Number.isNaN(parsed)) {
+                setCustomAnnualRateInput(formatRatePercentInput(customAnnualRatePercent));
+                return;
+              }
+
+              const normalized = normalizeCustomAnnualRatePercent(parsed);
+              setCustomAnnualRatePercent(normalized);
+              setCustomAnnualRateInput(formatRatePercentInput(normalized));
+            }}
+            className="w-32"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          The custom curve updates instantly and is evaluated alongside default scenarios.
         </p>
       </div>
 
@@ -337,6 +458,11 @@ const CHART_SERIES_META = [
     label: "Aggressive",
     color: "#b45309",
   },
+  {
+    key: "Custom",
+    label: "Custom",
+    color: "#be185d",
+  },
 ] as const;
 
 type SeriesKey = (typeof CHART_SERIES_META)[number]["key"];
@@ -369,12 +495,30 @@ function buildScenarioChartData(
   currentAmount: number,
   monthlyContribution: number,
   months: number,
+  customAnnualRate: number,
 ): ScenarioChartData {
   const samplingStep = resolveSamplingStep(months);
   const sampledMonths = sampleMonths(months, samplingStep);
-  const scenarioSnapshotsByMonth = sampledMonths.map((month) =>
-    compareScenarios(currentAmount, monthlyContribution, month),
-  );
+  const scenarioSnapshotsByMonth = sampledMonths.map((month) => {
+    const baseScenarios = compareScenarios(currentAmount, monthlyContribution, month);
+    const customProjection = calculateFutureValue({
+      initialPrincipal: currentAmount,
+      monthlyContribution,
+      annualRate: customAnnualRate,
+      months: month,
+    });
+
+    return [
+      ...baseScenarios,
+      {
+        scenarioName: "Custom" as const,
+        annualRate: customAnnualRate,
+        futureValue: customProjection.futureValue,
+        totalInvested: customProjection.totalInvested,
+        totalGains: customProjection.totalGains,
+      },
+    ];
+  });
 
   const valuesByScenario = {
     Conservative: scenarioSnapshotsByMonth.map(
@@ -385,6 +529,9 @@ function buildScenarioChartData(
     ),
     Aggressive: scenarioSnapshotsByMonth.map(
       (snapshot) => snapshot[2].futureValue,
+    ),
+    Custom: scenarioSnapshotsByMonth.map(
+      (snapshot) => snapshot[3].futureValue,
     ),
   } satisfies Record<SeriesKey, number[]>;
 
@@ -443,6 +590,10 @@ function buildScenarioChartData(
       x: xScale(month),
       y: yScale(valuesByScenario.Aggressive[index]),
     })),
+    Custom: sampledMonths.map((month, index) => ({
+      x: xScale(month),
+      y: yScale(valuesByScenario.Custom[index]),
+    })),
   } satisfies Record<SeriesKey, SeriesPoint[]>;
 
   return {
@@ -452,6 +603,22 @@ function buildScenarioChartData(
     valuesByScenario,
     series,
   };
+}
+
+function normalizeCustomAnnualRatePercent(value: number): number {
+  if (value < MIN_CUSTOM_ANNUAL_RATE_PERCENT) {
+    return MIN_CUSTOM_ANNUAL_RATE_PERCENT;
+  }
+
+  if (value > MAX_CUSTOM_ANNUAL_RATE_PERCENT) {
+    return MAX_CUSTOM_ANNUAL_RATE_PERCENT;
+  }
+
+  return Number(value.toFixed(2));
+}
+
+function formatRatePercentInput(value: number): string {
+  return value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d*[1-9])0$/, "$1");
 }
 
 function resolveSamplingStep(months: number): number {
@@ -490,7 +657,7 @@ function formatCompactCurrency(value: number): string {
 }
 
 const TOOLTIP_WIDTH = 172;
-const TOOLTIP_HEIGHT = 82;
+const TOOLTIP_HEIGHT = 96;
 
 function mapClientXToViewBoxX(clientX: number, element: SVGRectElement): number {
   const bounds = element.getBoundingClientRect();

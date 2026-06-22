@@ -82,6 +82,7 @@ export default async function GoalSimulationsPage({
         monthlyContribution={goal.monthlyContribution}
         targetAmount={goal.targetAmount}
         initialMonths={monthsRemaining === 0 ? 12 : monthsRemaining}
+        initialCustomAnnualRate={goal.expectedReturn * 100}
       />
     </div>
   );
