@@ -7,7 +7,7 @@ import type { Goal } from "@prisma/client";
 import { createGoal, updateGoal } from "@/app/actions/goals";
 import type { ActionResult } from "@/lib/actions/types";
 import { GOAL_PRIORITIES } from "@/lib/constants/goal";
-import { toDateInputValue } from "@/lib/format";
+import { formatPercentInputValue, toDateInputValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,7 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
     goal?.monthlyContribution.toString() ?? "",
   );
   const [expectedReturnPercent, setExpectedReturnPercent] = useState(
-    goal ? (goal.expectedReturn * 100).toString() : "7",
+    goal ? formatPercentInputValue(goal.expectedReturn) : "7",
   );
   const [targetDate, setTargetDate] = useState(
     goal ? toDateInputValue(goal.targetDate) : (defaultTargetDate ?? ""),
