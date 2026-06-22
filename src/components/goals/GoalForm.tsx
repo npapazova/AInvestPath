@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Goal } from "@prisma/client";
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type GoalFormProps = {
   goal?: Goal;
@@ -69,6 +71,7 @@ export function GoalForm({
   );
   const [priority, setPriority] = useState(goal?.priority ?? "MEDIUM");
   const [notes, setNotes] = useState(goal?.notes ?? "");
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [state, formAction, isPending] = useActionState(
     async (_prev: FormState, formData: FormData) => action(formData),
@@ -82,6 +85,8 @@ export function GoalForm({
       router.refresh();
     } else if (!state.success && state.error && !state.fieldErrors) {
       toast.error(state.error);
+    } else if (!state.success && state.fieldErrors) {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [state, mode, router]);
 
@@ -93,12 +98,31 @@ export function GoalForm({
     existingGoalNames.some((existingName) => normalizeGoalName(existingName) === normalizedName)
       ? "A goal with this name already exists"
       : undefined;
-  const defaultDate = goal
-    ? toDateInputValue(goal.targetDate)
-    : (defaultTargetDate ?? "");
+
+  // Avoid showing transient duplicate warnings while saving or after success.
+  const showDuplicateNameError = !isPending && !state.success && Boolean(duplicateNameError);
+
+  const allFieldErrors = fieldErrors
+    ? Object.entries(fieldErrors).flatMap(([, messages]) => messages || [])
+    : [];
+  const hasErrors = allFieldErrors.length > 0 || showDuplicateNameError;
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-6" ref={formRef}>
+      {hasErrors && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="font-semibold mb-2">Please fix the following errors:</div>
+            <ul className="list-disc pl-5 space-y-1">
+              {showDuplicateNameError && <li>{duplicateNameError}</li>}
+              {allFieldErrors.map((error, idx) => (
+                <li key={idx}>{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="name">Goal name</Label>
@@ -110,7 +134,7 @@ export function GoalForm({
             placeholder="e.g. Retirement Fund"
             required
           />
-          <FieldError messages={duplicateNameError ? [duplicateNameError] : fieldErrors?.name} />
+          <FieldError messages={showDuplicateNameError ? [duplicateNameError as string] : fieldErrors?.name} />
         </div>
 
         <div className="space-y-2">
@@ -220,7 +244,7 @@ export function GoalForm({
       </div>
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isPending || Boolean(duplicateNameError)}>
+        <Button type="submit" disabled={isPending || showDuplicateNameError}>
           {isPending
             ? "Saving..."
             : mode === "create"

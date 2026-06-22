@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { GoalActions } from "@/components/goals/GoalActions";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -134,20 +134,42 @@ export function GoalList({ goals }: GoalListProps) {
                 </span>
               </TableCell>
               <TableCell>
-                <Link
-                  href={`/goals/${goal.id}/simulations`}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                >
-                  Simulate
-                </Link>
+                {goal.currentAmount >= goal.targetAmount ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    title="This goal is completed"
+                  >
+                    Simulate
+                  </Button>
+                ) : (
+                  <Link
+                    href={`/goals/${goal.id}/simulations`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    Simulate
+                  </Link>
+                )}
               </TableCell>
               <TableCell>
-                <Link
-                  href={`/goals/${goal.id}/contributions`}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                >
-                  Add Contribution
-                </Link>
+                {goal.currentAmount >= goal.targetAmount ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    title="This goal is completed"
+                  >
+                    Add Contribution
+                  </Button>
+                ) : (
+                  <Link
+                    href={`/goals/${goal.id}/contributions`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    Add Contribution
+                  </Link>
+                )}
               </TableCell>
               <TableCell>
                 <GoalActions goal={goal} isArchived={goal.status === "ARCHIVED"} />
