@@ -16,6 +16,20 @@ export type GoalsFilter = {
   status?: "completed" | "archived" | "all";
 };
 
+function normalizeGoalName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+async function hasDuplicateGoalName(name: string, excludeGoalId?: string): Promise<boolean> {
+  const goals = await prisma.goal.findMany({
+    where: excludeGoalId ? { id: { not: excludeGoalId } } : undefined,
+    select: { name: true },
+  });
+
+  const normalizedName = normalizeGoalName(name);
+  return goals.some((goal) => normalizeGoalName(goal.name) === normalizedName);
+}
+
 export async function getGoals(filter: GoalsFilter = {}): Promise<Goal[]> {
   const { includeArchived = false, status } = filter;
 
@@ -82,10 +96,17 @@ export async function createGoal(
     return actionError("Validation failed", formatZodErrors(parsed.error));
   }
 
+  if (await hasDuplicateGoalName(parsed.data.name)) {
+    return actionError("Validation failed", {
+      name: ["A goal with this name already exists"],
+    });
+  }
+
   try {
     const goal = await prisma.goal.create({
       data: {
         ...parsed.data,
+        nameNormalized: normalizeGoalName(parsed.data.name),
         status: "ACTIVE",
       },
     });
@@ -113,10 +134,19 @@ export async function updateGoal(
     return actionError("Validation failed", formatZodErrors(parsed.error));
   }
 
+  if (await hasDuplicateGoalName(parsed.data.name, id)) {
+    return actionError("Validation failed", {
+      name: ["A goal with this name already exists"],
+    });
+  }
+
   try {
     const goal = await prisma.goal.update({
       where: { id },
-      data: parsed.data,
+      data: {
+        ...parsed.data,
+        nameNormalized: normalizeGoalName(parsed.data.name),
+      },
     });
 
     revalidatePath("/goals");

@@ -25,10 +25,13 @@ export function GoalsVisualizations({ goals }: GoalsVisualizationsProps) {
   const growth = buildGrowthSeries(goals);
   const growthPath = buildLinePath(growth);
 
-  const goalTotals: Array<{ name: string; amount: number }> = goals.map((goal) => ({
-    name: goal.name,
-    amount: goal.currentAmount,
-  }));
+  const goalTotals: Array<{ id: string; name: string; amount: number }> = goals.map(
+    (goal) => ({
+      id: goal.id,
+      name: goal.name,
+      amount: goal.currentAmount,
+    }),
+  );
 
   const completionForecast = [...goals]
     .filter((goal) => goal.projectedCompletionDate)
@@ -71,11 +74,11 @@ export function GoalsVisualizations({ goals }: GoalsVisualizationsProps) {
         <h2 className="text-lg font-semibold tracking-tight">Portfolio allocation chart</h2>
         <p className="mb-4 text-sm text-muted-foreground">Current balance allocation by goal.</p>
         <div className="space-y-3">
-          {goalTotals.map(({ name, amount }) => {
+          {goalTotals.map(({ id, name, amount }) => {
             const pct = totalCurrent > 0 ? (amount / totalCurrent) * 100 : 0;
 
             return (
-              <div key={name}>
+              <div key={id}>
                 <div className="mb-1 flex items-center justify-between text-sm">
                   <span>{name}</span>
                   <span className="text-muted-foreground">{pct.toFixed(1)}%</span>

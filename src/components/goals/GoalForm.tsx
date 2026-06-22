@@ -18,6 +18,7 @@ type GoalFormProps = {
   goal?: Goal;
   mode: "create" | "edit";
   defaultTargetDate?: string;
+  existingGoalNames?: string[];
 };
 
 type FormState = ActionResult<Goal>;
@@ -35,7 +36,16 @@ const selectClassName = cn(
   "disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30",
 );
 
-export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
+function normalizeGoalName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+export function GoalForm({
+  goal,
+  mode,
+  defaultTargetDate,
+  existingGoalNames = [],
+}: GoalFormProps) {
   const router = useRouter();
 
   const action =
@@ -76,6 +86,13 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
   }, [state, mode, router]);
 
   const fieldErrors = !state.success ? state.fieldErrors : undefined;
+  const normalizedName = normalizeGoalName(name);
+  const duplicateNameError =
+    mode === "create" &&
+    normalizedName.length > 0 &&
+    existingGoalNames.some((existingName) => normalizeGoalName(existingName) === normalizedName)
+      ? "A goal with this name already exists"
+      : undefined;
   const defaultDate = goal
     ? toDateInputValue(goal.targetDate)
     : (defaultTargetDate ?? "");
@@ -93,7 +110,7 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
             placeholder="e.g. Retirement Fund"
             required
           />
-          <FieldError messages={fieldErrors?.name} />
+          <FieldError messages={duplicateNameError ? [duplicateNameError] : fieldErrors?.name} />
         </div>
 
         <div className="space-y-2">
@@ -203,7 +220,7 @@ export function GoalForm({ goal, mode, defaultTargetDate }: GoalFormProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || Boolean(duplicateNameError)}>
           {isPending
             ? "Saving..."
             : mode === "create"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Contribution } from "@prisma/client";
@@ -65,16 +65,6 @@ export function ContributionForm({
     initialState,
   );
 
-  useEffect(() => {
-    if (state.success && "data" in state && state.data) {
-      toast.success(mode === "create" ? "Contribution recorded" : "Contribution updated");
-      router.push(`/goals/${state.data.goalId}/contributions`);
-      router.refresh();
-    } else if (!state.success && state.error && !state.fieldErrors) {
-      toast.error(state.error);
-    }
-  }, [mode, router, state]);
-
   const fieldErrors = !state.success ? state.fieldErrors : undefined;
   const selectedGoalId = contribution?.goalId ?? defaultGoalId ?? "";
   const selectedGoalName =
@@ -94,9 +84,47 @@ export function ContributionForm({
       : toDateInputValue(new Date()),
   );
   const [noteValue, setNoteValue] = useState(() => contribution?.note ?? "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
+
+  useEffect(() => {
+    if (state.success && "data" in state && state.data) {
+      toast.success(mode === "create" ? "Contribution recorded" : "Contribution updated");
+
+      if (mode === "create") {
+        setGoalIdValue(selectedGoalId);
+        setAmountValue("");
+        setContributionDateValue(toDateInputValue(new Date()));
+        setNoteValue("");
+      } else {
+        router.push(`/goals/${state.data.goalId}/contributions`);
+      }
+
+      router.refresh();
+    } else if (!state.success && state.error && !state.fieldErrors) {
+      toast.error(state.error);
+    }
+  }, [mode, router, selectedGoalId, state]);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (submitLockRef.current || isPending) {
+      event.preventDefault();
+      return;
+    }
+
+    submitLockRef.current = true;
+    setIsSubmitting(true);
+  };
+
+  useEffect(() => {
+    if (!isPending) {
+      submitLockRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [isPending]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onSubmit={handleSubmit} className="space-y-6">
       {mode === "create" ? (
         <div className="space-y-2">
           <Label htmlFor="goalId">Goal</Label>
@@ -168,8 +196,8 @@ export function ContributionForm({
       </div>
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isPending}>
-          {isPending
+        <Button type="submit" disabled={isPending || isSubmitting}>
+          {isPending || isSubmitting
             ? "Saving..."
             : mode === "create"
               ? "Save Contribution"
@@ -179,7 +207,7 @@ export function ContributionForm({
           type="button"
           variant="outline"
           onClick={() => router.push(cancelHref)}
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
         >
           Cancel
         </Button>

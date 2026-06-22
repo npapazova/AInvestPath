@@ -10,6 +10,7 @@ generator client {
 model Goal {
   id                  String   @id @default(uuid())
   name                String
+  nameNormalized      String   @unique
   targetAmount        Float
   currentAmount       Float
   monthlyContribution Float

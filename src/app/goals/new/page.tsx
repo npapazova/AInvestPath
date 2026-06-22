@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getGoals } from "@/app/actions/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { toDateInputValue } from "@/lib/format";
 import {
@@ -9,7 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function NewGoalPage() {
+export default async function NewGoalPage() {
+  const goals = await getGoals({ status: "all" });
   const oneYearFromNow = new Date();
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
 
@@ -41,6 +43,7 @@ export default function NewGoalPage() {
           <GoalForm
             mode="create"
             defaultTargetDate={toDateInputValue(oneYearFromNow)}
+            existingGoalNames={goals.map((goal) => goal.name)}
           />
         </CardContent>
       </Card>
